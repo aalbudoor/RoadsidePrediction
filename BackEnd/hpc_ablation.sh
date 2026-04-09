@@ -10,10 +10,9 @@
 #SBATCH --error=results/logs/ablation_%A_%a.err
 
 # ---------- Environment ----------
-module load python/3.10
-module load sumo
+# Python 3.10 and SUMO 1.12.0 available system-wide; no modules needed
 
-# Activate venv (create once: python -m venv ~/venvs/seal && pip install -r requirements.txt)
+# Activate venv (create once: python3 -m venv ~/venvs/seal && pip install -r requirements.txt)
 source ~/venvs/seal/bin/activate
 
 cd ~/RoadsidePrediction/BackEnd
