@@ -46,9 +46,12 @@ from scripts.run_campaign import save_campaign_results, train_and_evaluate
 # Logging setup
 # ---------------------------------------------------------------------------
 
+SLURM_TASK_ID = os.environ.get("SLURM_ARRAY_TASK_ID", "N/A")
+SLURM_JOB_ID = os.environ.get("SLURM_JOB_ID", "N/A")
+
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    format=f"%(asctime)s [%(levelname)s] [task={SLURM_TASK_ID} job={SLURM_JOB_ID}] %(name)s: %(message)s",
 )
 logger = logging.getLogger(__name__)
 
@@ -421,16 +424,23 @@ def run_ablation(
     results: List[CampaignResult] = []
     total = len(configs)
 
+    logger.info(
+        "[START] Ablation '%s' — %d configs, task=%s, job=%s, pid=%d",
+        ablation_name, total, SLURM_TASK_ID, SLURM_JOB_ID, os.getpid(),
+    )
+
     for i, config in enumerate(configs):
         logger.info(
-            "Ablation %s: running config '%s' (%d/%d)",
-            ablation_name, config.name, i + 1, total,
+            "[RUN %d/%d] Ablation '%s' — config '%s' | topology=%s, trainer=%s, episodes=%d, eval_runs=%d",
+            i + 1, total, ablation_name, config.name,
+            config.topology, config.trainer_type, config.n_episodes, config.n_eval_runs,
         )
         result = train_and_evaluate(config)
         results.append(result)
+        status = "OK" if result.error is None else f"FAILED: {result.error}"
         logger.info(
-            "Ablation %s: config '%s' done — %.1fs, error=%s",
-            ablation_name, config.name, result.duration_seconds, result.error,
+            "[DONE %d/%d] Ablation '%s' — config '%s' — %s — %.1fs",
+            i + 1, total, ablation_name, config.name, status, result.duration_seconds,
         )
 
     save_campaign_results(results, ablation_name)
@@ -567,6 +577,15 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+
+    logger.info(
+        "[INIT] SEAL ablation runner — task=%s, job=%s, pid=%d, ablation=%s, topologies=%s, demands=%s, seeds=%s",
+        SLURM_TASK_ID, SLURM_JOB_ID, os.getpid(),
+        args.ablation,
+        args.topologies or [args.topology],
+        args.demand_levels,
+        args.training_seeds,
+    )
 
     all_results: List[CampaignResult] = []
 
