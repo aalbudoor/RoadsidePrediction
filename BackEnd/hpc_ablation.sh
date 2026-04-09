@@ -1,11 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=seal-ablation
 #SBATCH --array=0-4
-#SBATCH --partition=gpu
-#SBATCH --gres=gpu:1
+#SBATCH --partition=ws-ia
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32G
-#SBATCH --time=24:00:00
+#SBATCH --time=23:59:00
 #SBATCH --output=results/logs/ablation_%A_%a.out
 #SBATCH --error=results/logs/ablation_%A_%a.err
 
