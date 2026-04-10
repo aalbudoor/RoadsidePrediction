@@ -575,6 +575,17 @@ def main() -> None:
         dest="demand_levels",
         help="VPLPH demand levels to test (e.g. --demand-levels 150 360 600)",
     )
+    parser.add_argument(
+        "--strategies",
+        nargs="+",
+        default=None,
+        dest="strategies",
+        help=(
+            "Filter strategy ablation to a subset by config name "
+            "(marl, mean_field, ctde, gossip, hierfed, feddistill, fedrl, sarl, "
+            "fixed_time, max_pressure). Only applies when --ablation strategy."
+        ),
+    )
 
     args = parser.parse_args()
 
@@ -634,6 +645,22 @@ def main() -> None:
                     n_episodes=args.n_episodes,
                     n_eval_runs=args.n_eval_runs,
                 )
+
+                # Optional strategy filter (only meaningful for --ablation strategy)
+                if ablation == "strategy" and args.strategies:
+                    wanted = set(args.strategies)
+                    configs = [c for c in configs if c.name in wanted]
+                    if not configs:
+                        logger.warning(
+                            "No strategy configs matched filter %s — skipping.",
+                            args.strategies,
+                        )
+                        continue
+                    logger.info(
+                        "Strategy filter active — running %d/%d configs: %s",
+                        len(configs), len(builder_map[ablation](topology=topology)),
+                        [c.name for c in configs],
+                    )
 
                 # Set demand level on all configs
                 for cfg in configs:

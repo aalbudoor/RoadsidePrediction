@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=seal-ablation
-#SBATCH --array=0-4
+#SBATCH --array=0-89
 #SBATCH --partition=ws-ia
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32G
@@ -10,40 +10,26 @@
 
 # ---------- Environment ----------
 # Python 3.10 and SUMO 1.12.0 available system-wide; no modules needed
-
-# Activate venv (create once: python3 -m venv ~/venvs/seal && pip install -r requirements.txt)
 source ~/venvs/seal/bin/activate
 
 cd ~/RoadsidePrediction/BackEnd
-
 mkdir -p results/logs
 
-# ---------- Experiment definitions ----------
-# Each array index maps to one experiment
-case $SLURM_ARRAY_TASK_ID in
-    0)
-        TOPO="grid-5x5"
-        DEMAND="150"
-        ;;
-    1)
-        TOPO="grid-5x5"
-        DEMAND="360"
-        ;;
-    2)
-        TOPO="grid-5x5"
-        DEMAND="600"
-        ;;
-    3)
-        TOPO="grid-3x3"
-        DEMAND="150 360 600"
-        ;;
-    4)
-        TOPO="cologne-8"
-        DEMAND="150 360 600"
-        ;;
-esac
+# ---------- Experiment grid ----------
+# 9 (topology, demand) combos × 10 strategies = 90 tasks
+# index = combo_idx * 10 + strategy_idx
+TOPOS=(grid-3x3 grid-3x3 grid-3x3 grid-5x5 grid-5x5 grid-5x5 cologne-8 cologne-8 cologne-8)
+DEMS=(150 360 600 150 360 600 150 360 600)
+STRATS=(marl mean_field ctde gossip hierfed feddistill fedrl sarl fixed_time max_pressure)
 
-echo "=== Job $SLURM_ARRAY_TASK_ID | Topology: $TOPO | Demand: $DEMAND ==="
+COMBO=$(( SLURM_ARRAY_TASK_ID / 10 ))
+STRAT=$(( SLURM_ARRAY_TASK_ID % 10 ))
+
+TOPO=${TOPOS[$COMBO]}
+DEMAND=${DEMS[$COMBO]}
+STRATEGY=${STRATS[$STRAT]}
+
+echo "=== Task $SLURM_ARRAY_TASK_ID | Topology: $TOPO | Demand: $DEMAND | Strategy: $STRATEGY ==="
 echo "Started: $(date)"
 
 python scripts/run_extension_ablation.py \
@@ -52,6 +38,7 @@ python scripts/run_extension_ablation.py \
     --demand-levels $DEMAND \
     --training-seeds 42 \
     --n-episodes 30 \
-    --n-eval-runs 5
+    --n-eval-runs 5 \
+    --strategies $STRATEGY
 
 echo "Finished: $(date)"
