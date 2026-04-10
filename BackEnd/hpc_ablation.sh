@@ -39,6 +39,7 @@ python scripts/run_extension_ablation.py \
     --training-seeds 42 \
     --n-episodes 30 \
     --n-eval-runs 5 \
-    --strategies $STRATEGY
+    --strategies $STRATEGY \
+    --campaign-suffix "${TOPO}_d${DEMAND}_${STRATEGY}"
 
 echo "Finished: $(date)"

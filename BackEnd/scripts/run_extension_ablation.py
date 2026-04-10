@@ -586,6 +586,16 @@ def main() -> None:
             "fixed_time, max_pressure). Only applies when --ablation strategy."
         ),
     )
+    parser.add_argument(
+        "--campaign-suffix",
+        default=None,
+        dest="campaign_suffix",
+        help=(
+            "Suffix appended to the campaign output directory name. "
+            "Use a unique value per parallel task to avoid concurrent writes "
+            "(e.g. --campaign-suffix grid-5x5_d150_marl)."
+        ),
+    )
 
     args = parser.parse_args()
 
@@ -682,6 +692,8 @@ def main() -> None:
                         expanded.append(c)
 
                 campaign_name = campaign_name_map[ablation]
+                if args.campaign_suffix:
+                    campaign_name = f"{campaign_name}__{args.campaign_suffix}"
                 results = run_ablation(
                     configs=expanded,
                     ablation_name=campaign_name,
